@@ -1,0 +1,20 @@
+{
+  "name": "payment-functions",
+  "version": "1.0.0",
+  "description": "PayPal and Stripe payment functions for Cloudflare Workers",
+  "scripts": {
+    "deploy": "bash deploy.sh",
+    "deploy:paypal": "cd paypal && wrangler publish",
+    "deploy:stripe": "cd stripe && wrangler publish",
+    "deploy:paypal:dev": "cd paypal && wrangler publish --env development",
+    "deploy:stripe:dev": "cd stripe && wrangler publish --env development",
+    "deploy:paypal:prod": "cd paypal && wrangler publish --env production",
+    "deploy:stripe:prod": "cd stripe && wrangler publish --env production",
+    "dev:paypal": "cd paypal && wrangler dev",
+    "dev:stripe": "cd stripe && wrangler dev",
+    "setup": "npm install -g wrangler && wrangler login"
+  },
+  "keywords": ["cloudflare", "workers", "paypal", "stripe", "payments"],
+  "author": "",
+  "license": "MIT"
+}

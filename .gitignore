@@ -1,1 +1,26 @@
 .claude
+
+# Dependencies
+node_modules/
+
+# Wrangler output
+dist/
+.wrangler/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+package-lock.json
