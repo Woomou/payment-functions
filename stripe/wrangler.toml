@@ -1,0 +1,13 @@
+name = "stripe-payments"
+main = "index.js"
+compatibility_date = "2023-12-01"
+
+[env.production.vars]
+# Set these in Cloudflare Dashboard or use wrangler secret put
+# STRIPE_SECRET_KEY = "sk_live_..."
+# STRIPE_WEBHOOK_SECRET = "whsec_..."
+
+[env.development.vars]
+# Development environment variables
+# STRIPE_SECRET_KEY = "sk_test_..."
+# STRIPE_WEBHOOK_SECRET = "whsec_..."
