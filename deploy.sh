@@ -14,11 +14,11 @@ deploy_service() {
     
     # Deploy to development environment
     echo "  → Deploying to development environment..."
-    wrangler publish --env development
+    wrangler deploy --env development
     
     # Deploy to production environment
     echo "  → Deploying to production environment..."
-    wrangler publish --env production
+    wrangler deploy --env production
     
     cd ..
     echo "✅ $service_name deployment completed"
