@@ -2,7 +2,7 @@
  * PayPal payment processing for Cloudflare Functions
  */
 
-const PAYPAL_API_BASE = 'https://api.sandbox.paypal.com'; // Use https://api.paypal.com for production
+// PayPal API Base URL - will be determined based on environment
 
 export default {
   async fetch(request, env, ctx) {
@@ -21,14 +21,40 @@ export default {
     }
 
     try {
-      if (pathname === '/create-order' && request.method === 'POST') {
+      if (pathname === '/' && request.method === 'GET') {
+        return new Response(JSON.stringify({
+          service: 'PayPal Payment Service',
+          environment: env.PAYPAL_ENVIRONMENT || 'not set',
+          endpoints: [
+            'POST /create-order',
+            'POST /capture-order',
+            'POST /webhook'
+          ],
+          status: 'running'
+        }), { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      } else if (pathname === '/create-order' && request.method === 'POST') {
         return await createOrder(request, env, corsHeaders);
       } else if (pathname === '/capture-order' && request.method === 'POST') {
         return await captureOrder(request, env, corsHeaders);
       } else if (pathname === '/webhook' && request.method === 'POST') {
         return await handleWebhook(request, env, corsHeaders);
       } else {
-        return new Response('Not Found', { status: 404, headers: corsHeaders });
+        return new Response(JSON.stringify({
+          error: 'Not Found',
+          method: request.method,
+          pathname: pathname,
+          available_endpoints: [
+            'GET /',
+            'POST /create-order',
+            'POST /capture-order',
+            'POST /webhook'
+          ]
+        }), { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
       }
     } catch (error) {
       console.error('PayPal payment error:', error);
@@ -40,10 +66,18 @@ export default {
   }
 };
 
+function getPayPalApiBase(env) {
+  // Use production API for production environment, sandbox for development
+  return env.PAYPAL_ENVIRONMENT === 'production' 
+    ? 'https://api.paypal.com' 
+    : 'https://api.sandbox.paypal.com';
+}
+
 async function getAccessToken(env) {
   const auth = btoa(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`);
+  const apiBase = getPayPalApiBase(env);
   
-  const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
+  const response = await fetch(`${apiBase}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${auth}`,
@@ -79,7 +113,8 @@ async function createOrder(request, env, corsHeaders) {
     }]
   };
 
-  const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
+  const apiBase = getPayPalApiBase(env);
+  const response = await fetch(`${apiBase}/v2/checkout/orders`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
@@ -108,7 +143,8 @@ async function captureOrder(request, env, corsHeaders) {
 
   const accessToken = await getAccessToken(env);
   
-  const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders/${orderID}/capture`, {
+  const apiBase = getPayPalApiBase(env);
+  const response = await fetch(`${apiBase}/v2/checkout/orders/${orderID}/capture`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
