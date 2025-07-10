@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stripe Payment Test</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .product {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .product h3 {
+            margin-top: 0;
+            color: #635bff;
+        }
+        .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #635bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .config {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ffeaa7;
+            margin-bottom: 20px;
+        }
+        .config code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stripe Payment Test</h1>
+
+        <div class="config">
+            <h3>📋 Configuration</h3>
+            <p>Current API Endpoint: <code id="api-endpoint">https://stripe-payments-development.realharryscissors.workers.dev</code></p>
+            <p>Environment: <strong>Test</strong></p>
+            <p>Publishable Key: <code id="publishable-key">YOUR_STRIPE_PUBLISHABLE_KEY</code></p>
+        </div>
+
+        <div class="product">
+            <h3>🛍️ Test Product</h3>
+            <div class="price">$<span id="price">10.00</span></div>
+            <div class="input-group">
+                <label for="amount">Amount (USD):</label>
+                <input type="number" id="amount" value="10.00" min="1" step="0.01">
+            </div>
+            <div id="card-element" style="margin:20px 0;"></div>
+            <button id="pay-button">💳 Pay with Stripe</button>
+        </div>
+
+        <div id="status" class="status"></div>
+        <div id="payment-details" style="display:none;">
+            <h3>📄 Payment Details</h3>
+            <pre id="payment-json"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://stripe-payments-development.realharryscissors.workers.dev';
+        const stripe = Stripe('YOUR_STRIPE_PUBLISHABLE_KEY');
+        const elements = stripe.elements();
+        const cardElement = elements.create('card');
+        cardElement.mount('#card-element');
+
+        document.getElementById('pay-button').addEventListener('click', handlePayment);
+
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+        }
+
+        async function handlePayment() {
+            const payButton = document.getElementById('pay-button');
+            const amount = document.getElementById('amount').value;
+            payButton.disabled = true;
+            showStatus('Creating payment intent...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/create-payment-intent`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ amount: parseFloat(amount) })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create payment intent');
+                }
+                const result = await stripe.confirmCardPayment(data.clientSecret, {
+                    payment_method: { card: cardElement }
+                });
+                if (result.error) {
+                    showStatus(result.error.message, 'error');
+                } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+                    showStatus('Payment succeeded!', 'success');
+                    document.getElementById('payment-details').style.display = 'block';
+                    document.getElementById('payment-json').textContent = JSON.stringify(result.paymentIntent, null, 2);
+                }
+            } catch (err) {
+                showStatus(err.message, 'error');
+            } finally {
+                payButton.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
