@@ -112,11 +112,95 @@
             border-radius: 3px;
             font-family: 'Courier New', monospace;
         }
+        .nav-button {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .nav-button:hover {
+            background: #138496;
+        }
+        .nav-button.active {
+            background: #28a745;
+        }
+        .test-section {
+            display: none;
+            margin-top: 20px;
+        }
+        .test-section.active {
+            display: block;
+        }
+        .test-row {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .test-col {
+            flex: 1;
+        }
+        .api-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .api-form h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .json-input {
+            width: 100%;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .response-box {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            background: #007bff;
+        }
+        .order-id-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>PayPal Payment Test</h1>
+        <h1>PayPal All-in-One Test Suite</h1>
         
         <div class="config">
             <h3>📋 Configuration</h3>
@@ -127,6 +211,7 @@
                 <li><code>PAYPAL_CLIENT_ID</code> - Your sandbox PayPal client ID</li>
                 <li><code>PAYPAL_CLIENT_SECRET</code> - Your sandbox PayPal client secret</li>
                 <li><code>PAYPAL_ENVIRONMENT</code> - "development"</li>
+                <li><code>PAYPAL_WEBHOOK_ID</code> - Your webhook ID</li>
             </ul>
             <p>🧪 <strong>Test Credit Card Numbers:</strong></p>
             <ul>
@@ -138,50 +223,197 @@
             </ul>
         </div>
 
-        <div class="product">
-            <h3>🛍️ Test Product</h3>
-            <p>This is a test product to verify PayPal payment integration.</p>
-            <div class="price">$<span id="price">10.00</span></div>
-            
-            <div class="input-group">
-                <label for="amount">Amount (USD):</label>
-                <input type="number" id="amount" value="10.00" min="1" step="0.01">
+        <!-- Test Environment Selector -->
+        <div class="config">
+            <h3>🎯 Test Environment</h3>
+            <label>
+                <input type="radio" name="environment" value="development" checked onclick="switchEnvironment('development')">
+                Development (Sandbox)
+            </label>
+            <label style="margin-left: 20px;">
+                <input type="radio" name="environment" value="production" onclick="switchEnvironment('production')">
+                Production (Live)
+            </label>
+        </div>
+
+        <!-- Test Navigation -->
+        <div class="config">
+            <h3>🧪 Test Sections</h3>
+            <button onclick="showSection('basic-payment')" class="nav-button">Basic Payment</button>
+            <button onclick="showSection('order-tracking')" class="nav-button">Order Tracking</button>
+            <button onclick="showSection('payment-management')" class="nav-button">Payment Management</button>
+            <button onclick="showSection('webhook-tests')" class="nav-button">Webhook Tests</button>
+            <button onclick="showSection('api-explorer')" class="nav-button">API Explorer</button>
+        </div>
+
+        <!-- Basic Payment Section -->
+        <div id="basic-payment" class="test-section active">
+            <div class="product">
+                <h3>🛍️ Basic Payment Test</h3>
+                <p>Test basic PayPal payment functionality with SDK integration.</p>
+                <div class="price">$<span id="price">10.00</span></div>
+                
+                <div class="input-group">
+                    <label for="amount">Amount (USD):</label>
+                    <input type="number" id="amount" value="10.00" min="1" step="0.01">
+                </div>
+                
+                <div class="input-group">
+                    <label for="currency">Currency:</label>
+                    <select id="currency">
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="description">Description:</label>
+                    <input type="text" id="description" value="Test Payment">
+                </div>
+                
+                <!-- PayPal Buttons Container -->
+                <div id="paypal-button-container"></div>
+                
+                <!-- Card Fields Container -->
+                <div id="card-fields-container" style="margin-top: 20px;">
+                    <h4>💳 Pay with Credit Card</h4>
+                    <div id="card-name-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
+                    <div id="card-number-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
+                    <div id="card-expiry-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
+                    <div id="card-cvv-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
+                    <button id="card-field-submit-button" style="margin-top: 10px; padding: 10px 20px; background: #0070ba; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Submit Payment
+                    </button>
+                </div>
+                
+                <!-- Manual test buttons -->
+                <div class="api-form">
+                    <h4>🔧 Manual API Testing</h4>
+                    <button id="pay-button" onclick="createPayPalOrder()">
+                        💳 Create PayPal Order (Manual)
+                    </button>
+                </div>
             </div>
-            
-            <div class="input-group">
-                <label for="currency">Currency:</label>
-                <select id="currency">
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
-                </select>
+        </div>
+
+        <!-- Order Tracking Section -->
+        <div id="order-tracking" class="test-section">
+            <div class="product">
+                <h3>📦 Order Tracking Tests</h3>
+                <p>Test order tracking, shipment tracking, and order management features.</p>
+                
+                <div class="api-form">
+                    <h4>🔍 Get Order Details</h4>
+                    <input type="text" id="order-id-details" placeholder="Enter Order ID" class="order-id-input">
+                    <button onclick="getOrderDetails()">Get Order Details</button>
+                    <div id="order-details-response" class="response-box"></div>
+                </div>
+                
+                <div class="api-form">
+                    <h4>🚚 Add Tracking Information</h4>
+                    <input type="text" id="order-id-tracking" placeholder="Enter Order ID" class="order-id-input">
+                    <textarea id="tracking-data" class="json-input" placeholder='{"tracking_number": "1Z999AA1234567890", "carrier": "UPS", "tracking_url": "https://www.ups.com/track?tracknum=1Z999AA1234567890", "notify_buyer": true}'></textarea>
+                    <button onclick="addOrderTracking()">Add Tracking Info</button>
+                    <div id="tracking-response" class="response-box"></div>
+                </div>
+                
+                <div class="api-form">
+                    <h4>📋 Get Tracking Information</h4>
+                    <input type="text" id="order-id-get-tracking" placeholder="Enter Order ID" class="order-id-input">
+                    <button onclick="getOrderTracking()">Get Tracking Info</button>
+                    <div id="get-tracking-response" class="response-box"></div>
+                </div>
+                
+                <div class="api-form">
+                    <h4>📝 Update Tracking Information</h4>
+                    <input type="text" id="order-id-update-tracking" placeholder="Enter Order ID" class="order-id-input">
+                    <textarea id="update-tracking-data" class="json-input" placeholder='{"tracking_number": "1Z999AA1234567890", "carrier": "UPS", "status": "DELIVERED", "tracking_url": "https://www.ups.com/track?tracknum=1Z999AA1234567890", "notify_buyer": true}'></textarea>
+                    <button onclick="updateOrderTracking()">Update Tracking Info</button>
+                    <div id="update-tracking-response" class="response-box"></div>
+                </div>
             </div>
-            
-            <div class="input-group">
-                <label for="description">Description:</label>
-                <input type="text" id="description" value="Test Payment">
+        </div>
+
+        <!-- Payment Management Section -->
+        <div id="payment-management" class="test-section">
+            <div class="product">
+                <h3>💰 Payment Management Tests</h3>
+                <p>Test payment details retrieval, refund processing, and payment monitoring.</p>
+                
+                <div class="api-form">
+                    <h4>🔍 Get Payment Details</h4>
+                    <input type="text" id="payment-id-details" placeholder="Enter Payment ID" class="order-id-input">
+                    <button onclick="getPaymentDetails()">Get Payment Details</button>
+                    <div id="payment-details-response" class="response-box"></div>
+                </div>
+                
+                <div class="api-form">
+                    <h4>💸 Process Refund</h4>
+                    <input type="text" id="payment-id-refund" placeholder="Enter Payment ID" class="order-id-input">
+                    <textarea id="refund-data" class="json-input" placeholder='{"amount": "10.00", "currency": "USD", "note_to_payer": "Refund for order cancellation", "invoice_id": "INV-123"}'></textarea>
+                    <button onclick="processRefund()">Process Refund</button>
+                    <div id="refund-response" class="response-box"></div>
+                </div>
             </div>
-            
-            <!-- PayPal Buttons Container -->
-            <div id="paypal-button-container"></div>
-            
-            <!-- Card Fields Container -->
-            <div id="card-fields-container" style="margin-top: 20px;">
-                <h4>💳 Pay with Credit Card</h4>
-                <div id="card-name-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
-                <div id="card-number-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
-                <div id="card-expiry-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
-                <div id="card-cvv-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
-                <button id="card-field-submit-button" style="margin-top: 10px; padding: 10px 20px; background: #0070ba; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                    Submit Payment
-                </button>
+        </div>
+
+        <!-- Webhook Tests Section -->
+        <div id="webhook-tests" class="test-section">
+            <div class="product">
+                <h3>🔔 Webhook Tests</h3>
+                <p>Test webhook event handling and verification.</p>
+                
+                <div class="api-form">
+                    <h4>✅ Verify Webhook Signature</h4>
+                    <textarea id="webhook-verification-data" class="json-input" placeholder='{"auth_algo": "SHA256withRSA", "cert_id": "cert_id", "transmission_id": "transmission_id", "transmission_sig": "signature", "transmission_time": "timestamp", "webhook_id": "webhook_id", "webhook_event": {}}'></textarea>
+                    <button onclick="verifyWebhook()">Verify Webhook</button>
+                    <div id="webhook-verify-response" class="response-box"></div>
+                </div>
+                
+                <div class="api-form">
+                    <h4>🧪 Simulate Webhook Events</h4>
+                    <select id="webhook-event-type">
+                        <option value="CHECKOUT.ORDER.APPROVED">CHECKOUT.ORDER.APPROVED</option>
+                        <option value="CHECKOUT.ORDER.COMPLETED">CHECKOUT.ORDER.COMPLETED</option>
+                        <option value="PAYMENT.CAPTURE.COMPLETED">PAYMENT.CAPTURE.COMPLETED</option>
+                        <option value="PAYMENT.CAPTURE.DENIED">PAYMENT.CAPTURE.DENIED</option>
+                        <option value="PAYMENT.CAPTURE.PENDING">PAYMENT.CAPTURE.PENDING</option>
+                        <option value="PAYMENT.CAPTURE.REFUNDED">PAYMENT.CAPTURE.REFUNDED</option>
+                        <option value="CUSTOMER.DISPUTE.CREATED">CUSTOMER.DISPUTE.CREATED</option>
+                    </select>
+                    <textarea id="webhook-event-data" class="json-input" placeholder='{"event_type": "PAYMENT.CAPTURE.COMPLETED", "resource": {"id": "payment_id", "amount": {"value": "10.00", "currency_code": "USD"}, "status": "COMPLETED"}}'></textarea>
+                    <button onclick="simulateWebhookEvent()">Simulate Event</button>
+                    <div id="webhook-simulate-response" class="response-box"></div>
+                </div>
             </div>
-            
-            <!-- Fallback manual buttons -->
-            <div id="manual-buttons" style="display: none;">
-                <button id="pay-button" onclick="createPayPalOrder()">
-                    💳 Create PayPal Order (Manual)
-                </button>
+        </div>
+
+        <!-- API Explorer Section -->
+        <div id="api-explorer" class="test-section">
+            <div class="product">
+                <h3>🔧 API Explorer</h3>
+                <p>Test any API endpoint with custom parameters.</p>
+                
+                <div class="api-form">
+                    <h4>🚀 Custom API Call</h4>
+                    <select id="api-method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                    <input type="text" id="api-endpoint-input" placeholder="Enter endpoint (e.g., /orders/ORDER_ID)" class="order-id-input">
+                    <textarea id="api-body" class="json-input" placeholder='{"key": "value"}'></textarea>
+                    <button onclick="makeCustomAPICall()">Make API Call</button>
+                    <div id="api-response" class="response-box"></div>
+                </div>
+                
+                <div class="api-form">
+                    <h4>📊 API Status Check</h4>
+                    <button onclick="checkAPIStatus()">Check API Status</button>
+                    <div id="api-status-response" class="response-box"></div>
+                </div>
             </div>
         </div>
 
@@ -194,7 +426,40 @@
     </div>
 
     <script>
-        const API_BASE = 'https://paypal-payments-development.realharryscissors.workers.dev';
+        let API_BASE = 'https://paypal-payments-development.realharryscissors.workers.dev';
+        let currentSection = 'basic-payment';
+        
+        // Environment switching
+        function switchEnvironment(env) {
+            if (env === 'production') {
+                API_BASE = 'https://paypal-payments-production.realharryscissors.workers.dev';
+            } else {
+                API_BASE = 'https://paypal-payments-development.realharryscissors.workers.dev';
+            }
+            document.getElementById('api-endpoint').textContent = API_BASE;
+            showStatus(`Switched to ${env} environment`, 'info');
+        }
+        
+        // Section navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.test-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.nav-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            currentSection = sectionId;
+        }
         
         // Test API connection on page load
         window.addEventListener('load', async () => {
@@ -579,6 +844,320 @@
                     document.getElementById('manual-buttons').style.display = 'block';
                 }
             }, 1000);
+        });
+        
+        // ======================
+        // NEW TESTING FUNCTIONS
+        // ======================
+        
+        // Order Details Functions
+        async function getOrderDetails() {
+            const orderId = document.getElementById('order-id-details').value;
+            if (!orderId) {
+                showStatus('Please enter an Order ID', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('Fetching order details...', 'info');
+                const response = await fetch(`${API_BASE}/orders/${orderId}`);
+                const data = await response.json();
+                
+                document.getElementById('order-details-response').textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    showStatus('Order details fetched successfully', 'success');
+                } else {
+                    showStatus(`Error: ${data.error || 'Failed to fetch order details'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Order Tracking Functions
+        async function getOrderTracking() {
+            const orderId = document.getElementById('order-id-get-tracking').value;
+            if (!orderId) {
+                showStatus('Please enter an Order ID', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('Fetching tracking information...', 'info');
+                const response = await fetch(`${API_BASE}/orders/${orderId}/track`);
+                const data = await response.json();
+                
+                document.getElementById('get-tracking-response').textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    showStatus('Tracking information fetched successfully', 'success');
+                } else {
+                    showStatus(`Error: ${data.error || 'Failed to fetch tracking information'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function addOrderTracking() {
+            const orderId = document.getElementById('order-id-tracking').value;
+            const trackingData = document.getElementById('tracking-data').value;
+            
+            if (!orderId || !trackingData) {
+                showStatus('Please enter both Order ID and tracking data', 'error');
+                return;
+            }
+            
+            try {
+                const trackingJson = JSON.parse(trackingData);
+                showStatus('Adding tracking information...', 'info');
+                
+                const response = await fetch(`${API_BASE}/orders/${orderId}/track`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(trackingJson)
+                });
+                
+                const data = await response.json();
+                document.getElementById('tracking-response').textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    showStatus('Tracking information added successfully', 'success');
+                } else {
+                    showStatus(`Error: ${data.error || 'Failed to add tracking information'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function updateOrderTracking() {
+            const orderId = document.getElementById('order-id-update-tracking').value;
+            const trackingData = document.getElementById('update-tracking-data').value;
+            
+            if (!orderId || !trackingData) {
+                showStatus('Please enter both Order ID and tracking data', 'error');
+                return;
+            }
+            
+            try {
+                const trackingJson = JSON.parse(trackingData);
+                showStatus('Updating tracking information...', 'info');
+                
+                const response = await fetch(`${API_BASE}/orders/${orderId}/track`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(trackingJson)
+                });
+                
+                const data = await response.json();
+                document.getElementById('update-tracking-response').textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    showStatus('Tracking information updated successfully', 'success');
+                } else {
+                    showStatus(`Error: ${data.error || 'Failed to update tracking information'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Payment Management Functions
+        async function getPaymentDetails() {
+            const paymentId = document.getElementById('payment-id-details').value;
+            if (!paymentId) {
+                showStatus('Please enter a Payment ID', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('Fetching payment details...', 'info');
+                const response = await fetch(`${API_BASE}/payments/${paymentId}`);
+                const data = await response.json();
+                
+                document.getElementById('payment-details-response').textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    showStatus('Payment details fetched successfully', 'success');
+                } else {
+                    showStatus(`Error: ${data.error || 'Failed to fetch payment details'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function processRefund() {
+            const paymentId = document.getElementById('payment-id-refund').value;
+            const refundData = document.getElementById('refund-data').value;
+            
+            if (!paymentId || !refundData) {
+                showStatus('Please enter both Payment ID and refund data', 'error');
+                return;
+            }
+            
+            try {
+                const refundJson = JSON.parse(refundData);
+                showStatus('Processing refund...', 'info');
+                
+                const response = await fetch(`${API_BASE}/payments/${paymentId}/refund`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(refundJson)
+                });
+                
+                const data = await response.json();
+                document.getElementById('refund-response').textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    showStatus('Refund processed successfully', 'success');
+                } else {
+                    showStatus(`Error: ${data.error || 'Failed to process refund'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Webhook Functions
+        async function verifyWebhook() {
+            const webhookData = document.getElementById('webhook-verification-data').value;
+            
+            if (!webhookData) {
+                showStatus('Please enter webhook verification data', 'error');
+                return;
+            }
+            
+            try {
+                const webhookJson = JSON.parse(webhookData);
+                showStatus('Verifying webhook signature...', 'info');
+                
+                const response = await fetch(`${API_BASE}/webhook/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(webhookJson)
+                });
+                
+                const data = await response.json();
+                document.getElementById('webhook-verify-response').textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    showStatus('Webhook signature verified successfully', 'success');
+                } else {
+                    showStatus(`Error: ${data.error || 'Failed to verify webhook signature'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function simulateWebhookEvent() {
+            const eventType = document.getElementById('webhook-event-type').value;
+            const eventData = document.getElementById('webhook-event-data').value;
+            
+            if (!eventData) {
+                showStatus('Please enter webhook event data', 'error');
+                return;
+            }
+            
+            try {
+                const eventJson = JSON.parse(eventData);
+                eventJson.event_type = eventType; // Override with selected event type
+                
+                showStatus('Simulating webhook event...', 'info');
+                
+                const response = await fetch(`${API_BASE}/webhook`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(eventJson)
+                });
+                
+                const data = await response.text();
+                document.getElementById('webhook-simulate-response').textContent = data;
+                
+                if (response.ok) {
+                    showStatus('Webhook event simulated successfully', 'success');
+                } else {
+                    showStatus(`Error: Failed to simulate webhook event`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // API Explorer Functions
+        async function makeCustomAPICall() {
+            const method = document.getElementById('api-method').value;
+            const endpoint = document.getElementById('api-endpoint-input').value;
+            const body = document.getElementById('api-body').value;
+            
+            if (!endpoint) {
+                showStatus('Please enter an API endpoint', 'error');
+                return;
+            }
+            
+            try {
+                showStatus(`Making ${method} request to ${endpoint}...`, 'info');
+                
+                const requestOptions = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (method !== 'GET' && body) {
+                    requestOptions.body = body;
+                }
+                
+                const response = await fetch(`${API_BASE}${endpoint}`, requestOptions);
+                const data = await response.json();
+                
+                document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    showStatus(`${method} request completed successfully`, 'success');
+                } else {
+                    showStatus(`Error: ${data.error || 'API request failed'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkAPIStatus() {
+            try {
+                showStatus('Checking API status...', 'info');
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                document.getElementById('api-status-response').textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    showStatus('API status check completed successfully', 'success');
+                } else {
+                    showStatus('API status check failed', 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Initialize first nav button as active
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('.nav-button').classList.add('active');
         });
     </script>
 </body>
