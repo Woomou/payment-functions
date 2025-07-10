@@ -21,7 +21,21 @@ export default {
     }
 
     try {
-      if (pathname === '/create-payment-intent' && request.method === 'POST') {
+      if (pathname === '/' && request.method === 'GET') {
+        return new Response(
+          JSON.stringify({
+            service: 'Stripe Payment Service',
+            environment: env.STRIPE_ENVIRONMENT || 'not set',
+            endpoints: [
+              'POST /create-payment-intent',
+              'POST /confirm-payment',
+              'POST /webhook',
+              'POST /refund'
+            ]
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else if (pathname === '/create-payment-intent' && request.method === 'POST') {
         return await createPaymentIntent(request, env, corsHeaders);
       } else if (pathname === '/confirm-payment' && request.method === 'POST') {
         return await confirmPayment(request, env, corsHeaders);
@@ -30,7 +44,21 @@ export default {
       } else if (pathname === '/refund' && request.method === 'POST') {
         return await createRefund(request, env, corsHeaders);
       } else {
-        return new Response('Not Found', { status: 404, headers: corsHeaders });
+        return new Response(
+          JSON.stringify({
+            error: 'Not Found',
+            method: request.method,
+            pathname,
+            available_endpoints: [
+              'GET /',
+              'POST /create-payment-intent',
+              'POST /confirm-payment',
+              'POST /webhook',
+              'POST /refund'
+            ]
+          }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
     } catch (error) {
       console.error('Stripe payment error:', error);
