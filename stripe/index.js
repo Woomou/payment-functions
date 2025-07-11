@@ -47,9 +47,9 @@ async function stripeRequest(endpoint, method, data, env) {
     method,
     headers: {
       'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
     },
-    body: data ? new URLSearchParams(data).toString() : null,
+    body: data ? JSON.stringify(data) : null,
   });
 
   return await response.json();
