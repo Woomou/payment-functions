@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PayPal Payment Test</title>
-    <!-- PayPal JavaScript SDK with card-fields component -->
-    <script src="https://www.paypal.com/sdk/js?client-id=AcbqkofakNw-zIq4Jql1WkcU0qSi6qfRA3GayhHQ7Ugrz7Bw7fZdyQL_877QUy_gS4LBolWe-HtKbKRl&components=buttons,card-fields&currency=USD&intent=capture"></script>
+    <!-- PayPal JavaScript SDK will be loaded dynamically -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -196,6 +195,101 @@
             border-radius: 4px;
             font-family: 'Courier New', monospace;
         }
+        .card-field {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+        }
+        .card-field.invalid {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        .card-field.valid {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        .submit-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .submit-button:hover {
+            background: #0056b3;
+        }
+        .submit-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .payment-section {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        .payment-section.active {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+        .card-field-group {
+            margin: 15px 0;
+        }
+        .card-field-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        .card-field-input {
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            transition: border-color 0.3s ease;
+            font-size: 16px;
+        }
+        .card-field-input:hover {
+            border-color: #007bff;
+        }
+        .card-field-input.focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+        .card-field-input.invalid {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+        .card-field-input.valid {
+            border-color: #28a745;
+            background-color: #f8fff8;
+        }
+        #card-fields-container {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        #card-fields-container h4 {
+            color: #0070ba;
+            margin-top: 0;
+        }
     </style>
 </head>
 <body>
@@ -240,6 +334,7 @@
         <div class="config">
             <h3>🧪 Test Sections</h3>
             <button onclick="showSection('basic-payment')" class="nav-button">Basic Payment</button>
+            <button onclick="showSection('advanced-checkout')" class="nav-button">Advanced Checkout</button>
             <button onclick="showSection('order-tracking')" class="nav-button">Order Tracking</button>
             <button onclick="showSection('payment-management')" class="nav-button">Payment Management</button>
             <button onclick="showSection('webhook-tests')" class="nav-button">Webhook Tests</button>
@@ -276,15 +371,44 @@
                 <div id="paypal-button-container"></div>
                 
                 <!-- Card Fields Container -->
-                <div id="card-fields-container" style="margin-top: 20px;">
-                    <h4>💳 Pay with Credit Card</h4>
-                    <div id="card-name-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
-                    <div id="card-number-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
-                    <div id="card-expiry-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
-                    <div id="card-cvv-field-container" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></div>
-                    <button id="card-field-submit-button" style="margin-top: 10px; padding: 10px 20px; background: #0070ba; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        Submit Payment
+                <div id="card-fields-container" style="margin-top: 20px; display: none;">
+                    <h4>💳 Pay with Credit Card - Advanced Checkout</h4>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
+                        Enter your credit card information directly below. All information is securely processed by PayPal.
+                    </p>
+                    
+                    <div class="card-field-group">
+                        <label for="card-name-field-container">Cardholder Name:</label>
+                        <div id="card-name-field-container" class="card-field-input"></div>
+                    </div>
+                    
+                    <div class="card-field-group">
+                        <label for="card-number-field-container">Card Number:</label>
+                        <div id="card-number-field-container" class="card-field-input"></div>
+                    </div>
+                    
+                    <div class="test-row">
+                        <div class="test-col">
+                            <div class="card-field-group">
+                                <label for="card-expiry-field-container">Expiration Date:</label>
+                                <div id="card-expiry-field-container" class="card-field-input"></div>
+                            </div>
+                        </div>
+                        <div class="test-col">
+                            <div class="card-field-group">
+                                <label for="card-cvv-field-container">Security Code (CVV):</label>
+                                <div id="card-cvv-field-container" class="card-field-input"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="card-field-submit-button" class="submit-button" style="margin-top: 15px;">
+                        🔒 Submit Card Payment
                     </button>
+                    
+                    <div style="font-size: 12px; color: #888; margin-top: 10px; text-align: center;">
+                        🛡️ Your payment information is encrypted and securely processed by PayPal
+                    </div>
                 </div>
                 
                 <!-- Manual test buttons -->
@@ -293,6 +417,206 @@
                     <button id="pay-button" onclick="createPayPalOrder()">
                         💳 Create PayPal Order (Manual)
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Checkout Section -->
+        <div id="advanced-checkout" class="test-section">
+            <div class="product">
+                <h3>🚀 Advanced Checkout - Direct Card Payment</h3>
+                <p>PayPal Advanced Checkout enables direct card payments without redirecting to PayPal.</p>
+                
+                <div class="test-row">
+                    <div class="test-col">
+                        <div class="api-form">
+                            <h4>💳 Payment Details</h4>
+                            <div class="input-group">
+                                <label for="advanced-amount">Amount (USD):</label>
+                                <input type="number" id="advanced-amount" value="25.00" min="1" step="0.01">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="advanced-currency">Currency:</label>
+                                <select id="advanced-currency">
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="GBP">GBP</option>
+                                </select>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="advanced-description">Description:</label>
+                                <input type="text" id="advanced-description" value="Advanced Checkout Test">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>
+                                    <input type="checkbox" id="collect-billing-address" checked>
+                                    Collect Billing Address
+                                </label>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>
+                                    <input type="checkbox" id="collect-shipping-address">
+                                    Collect Shipping Address
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="test-col">
+                        <div class="api-form">
+                            <h4>🎨 Card Field Styling</h4>
+                            <div class="input-group">
+                                <label for="field-color">Text Color:</label>
+                                <input type="color" id="field-color" value="#000000">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="field-font-size">Font Size:</label>
+                                <select id="field-font-size">
+                                    <option value="14px">14px</option>
+                                    <option value="16px" selected>16px</option>
+                                    <option value="18px">18px</option>
+                                </select>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="field-border-radius">Border Radius:</label>
+                                <select id="field-border-radius">
+                                    <option value="0px">0px</option>
+                                    <option value="4px" selected>4px</option>
+                                    <option value="8px">8px</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Advanced Card Fields -->
+                <div class="api-form">
+                    <h4>💳 Advanced Card Fields</h4>
+                    
+                    <!-- Debug controls -->
+                    <div class="api-form" style="background: #fff3cd; border: 1px solid #ffeaa7;">
+                        <h5>🔧 Debug Controls</h5>
+                        <button onclick="initializeAdvancedCheckout()" style="background: #17a2b8; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin: 5px;">
+                            🔄 Reinitialize Advanced Checkout
+                        </button>
+                        <button onclick="console.log('PayPal object:', paypal); console.log('CardFields available:', !!paypal.CardFields);" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin: 5px;">
+                            🔍 Debug PayPal Object
+                        </button>
+                    </div>
+                    
+                    <div id="advanced-card-eligibility" class="status info" style="display: none;">
+                        Checking card fields eligibility...
+                    </div>
+                    
+                    <div id="advanced-card-fields-container" style="display: none;">
+                        <div class="test-row">
+                            <div class="test-col">
+                                <label>Cardholder Name:</label>
+                                <div id="advanced-card-name-field" class="card-field"></div>
+                            </div>
+                            <div class="test-col">
+                                <label>Card Number:</label>
+                                <div id="advanced-card-number-field" class="card-field"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="test-row">
+                            <div class="test-col">
+                                <label>Expiration Date:</label>
+                                <div id="advanced-card-expiry-field" class="card-field"></div>
+                            </div>
+                            <div class="test-col">
+                                <label>Security Code:</label>
+                                <div id="advanced-card-cvv-field" class="card-field"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="billing-address-section" style="display: none;">
+                            <h5>📍 Billing Address</h5>
+                            <div class="test-row">
+                                <div class="test-col">
+                                    <label>Street Address:</label>
+                                    <div id="advanced-card-billing-address-field" class="card-field"></div>
+                                </div>
+                                <div class="test-col">
+                                    <label>City:</label>
+                                    <div id="advanced-card-billing-city-field" class="card-field"></div>
+                                </div>
+                            </div>
+                            <div class="test-row">
+                                <div class="test-col">
+                                    <label>State/Province:</label>
+                                    <div id="advanced-card-billing-state-field" class="card-field"></div>
+                                </div>
+                                <div class="test-col">
+                                    <label>ZIP/Postal Code:</label>
+                                    <div id="advanced-card-billing-zip-field" class="card-field"></div>
+                                </div>
+                            </div>
+                            <div class="test-row">
+                                <div class="test-col">
+                                    <label>Country:</label>
+                                    <div id="advanced-card-billing-country-field" class="card-field"></div>
+                                </div>
+                                <div class="test-col"></div>
+                            </div>
+                        </div>
+                        
+                        <button id="advanced-card-submit" class="submit-button" style="margin-top: 20px;">
+                            🚀 Process Advanced Payment
+                        </button>
+                    </div>
+                    
+                    <div id="advanced-card-not-eligible" class="status error" style="display: none;">
+                        Advanced Card Fields are not eligible for this merchant account.
+                    </div>
+                </div>
+                
+                <!-- 3D Secure Section -->
+                <div class="api-form">
+                    <h4>🔒 3D Secure Authentication</h4>
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="enable-3d-secure" checked>
+                            Enable 3D Secure Authentication
+                        </label>
+                    </div>
+                    <div class="status info">
+                        3D Secure provides additional security for card transactions and is recommended for all payments.
+                    </div>
+                </div>
+                
+                <!-- Alternative Payment Methods -->
+                <div class="api-form">
+                    <h4>🔄 Alternative Payment Methods</h4>
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="enable-paypal-button" checked>
+                            Show PayPal Button
+                        </label>
+                    </div>
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="enable-apple-pay">
+                            Enable Apple Pay (if supported)
+                        </label>
+                    </div>
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="enable-google-pay">
+                            Enable Google Pay (if supported)
+                        </label>
+                    </div>
+                    
+                    <div id="alternative-payment-container" style="margin-top: 20px;">
+                        <!-- Alternative payment buttons will be rendered here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -428,6 +752,45 @@
     <script>
         let API_BASE = 'https://paypal-payments-development.realharryscissors.workers.dev';
         let currentSection = 'basic-payment';
+
+        // Function to dynamically load PayPal SDK
+        function loadPayPalSDK(currency = 'USD') {
+            showStatus(`Loading PayPal SDK for ${currency}...`, 'info');
+
+            // Remove existing script to avoid conflicts
+            const existingScript = document.querySelector('script[src*="paypal.com/sdk/js"]');
+            if (existingScript) {
+                document.head.removeChild(existingScript);
+            }
+
+            // It's good practice to nullify the paypal object to ensure clean reload
+            if (window.paypal) {
+                window.paypal = null;
+            }
+
+            const script = document.createElement('script');
+            const clientId = "AcbqkofakNw-zIq4Jql1WkcU0qSi6qfRA3GayhHQ7Ugrz7Bw7fZdyQL_877QUy_gS4LBolWe-HtKbKRl";
+            script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=buttons,card-fields,hosted-fields&currency=${currency}&intent=capture&buyer-country=US&debug=true`;
+            
+            script.onload = () => {
+                console.log(`PayPal SDK loaded for ${currency}`);
+                if (typeof paypal !== 'undefined') {
+                    // Re-initialize all components that depend on the PayPal SDK
+                    initializePayPalButtons();
+                    initializeCardFields();
+                    initializeAdvancedCheckout();
+                    showStatus(`PayPal SDK loaded for ${currency}`, 'success');
+                } else {
+                    showStatus('PayPal SDK failed to load.', 'error');
+                }
+            };
+            
+            script.onerror = () => {
+                showStatus(`Failed to load PayPal SDK for ${currency}.`, 'error');
+            };
+
+            document.head.appendChild(script);
+        }
         
         // Environment switching
         function switchEnvironment(env) {
@@ -683,114 +1046,174 @@
         function initializeCardFields() {
             if (!paypal.CardFields) {
                 showStatus('CardFields component not available', 'error');
+                document.getElementById('card-fields-container').style.display = 'none';
                 return;
             }
             
             // Check if eligible for CardFields
             if (!paypal.CardFields.isEligible()) {
-                showStatus('CardFields not eligible for this merchant', 'error');
+                showStatus('CardFields not eligible for this merchant account. Using alternative payment methods.', 'info');
                 document.getElementById('card-fields-container').style.display = 'none';
                 return;
             }
             
-            showStatus('CardFields component is eligible', 'success');
+            // Show card fields container
+            document.getElementById('card-fields-container').style.display = 'block';
+            showStatus('CardFields component is eligible - initializing credit card fields...', 'success');
             
-            cardFields = paypal.CardFields({
-                createOrder: function() {
-                    const amount = document.getElementById('amount').value;
-                    const currency = document.getElementById('currency').value;
-                    const description = document.getElementById('description').value;
+            try {
+                cardFields = paypal.CardFields({
+                    createOrder: function() {
+                        const amount = document.getElementById('amount').value;
+                        const currency = document.getElementById('currency').value;
+                        const description = document.getElementById('description').value;
+                        
+                        if (!amount || amount <= 0) {
+                            showStatus('Please enter a valid amount', 'error');
+                            throw new Error('Invalid amount');
+                        }
+                        
+                        showStatus('Creating order for card payment...', 'info');
+                        
+                        return fetch(`${API_BASE}/create-order`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                amount: parseFloat(amount),
+                                currency: currency,
+                                description: description
+                            })
+                        })
+                        .then(function(response) {
+                            if (!response.ok) {
+                                throw new Error('Failed to create order');
+                            }
+                            return response.json();
+                        })
+                        .then(function(orderData) {
+                            console.log('Order created for card payment:', orderData);
+                            orderID = orderData.id;
+                            return orderData.id;
+                        })
+                        .catch(function(error) {
+                            showStatus('Order creation failed: ' + error.message, 'error');
+                            throw error;
+                        });
+                    },
                     
+                    onApprove: function(data) {
+                        showStatus('Card payment approved! Capturing...', 'info');
+                        
+                        return fetch(`${API_BASE}/capture-order`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                orderID: data.orderID
+                            })
+                        })
+                        .then(function(response) {
+                            if (!response.ok) {
+                                throw new Error('Failed to capture payment');
+                            }
+                            return response.json();
+                        })
+                        .then(function(orderData) {
+                            showStatus('Card payment completed successfully! 🎉', 'success');
+                            
+                            // Show order details
+                            document.getElementById('order-details').style.display = 'block';
+                            document.getElementById('order-json').textContent = JSON.stringify(orderData, null, 2);
+                            
+                            console.log('Card payment completed:', orderData);
+                            
+                            // Record transaction
+                            recordTransaction(orderData);
+                            
+                            return orderData;
+                        })
+                        .catch(function(error) {
+                            showStatus('Payment capture failed: ' + error.message, 'error');
+                            throw error;
+                        });
+                    },
+                    
+                    onError: function(err) {
+                        showStatus('Card payment error: ' + err.message, 'error');
+                        console.error('CardFields error:', err);
+                    },
+                    
+                    style: {
+                        'input': {
+                            'font-size': '16px',
+                            'color': '#333',
+                            'font-family': 'Arial, sans-serif'
+                        }
+                    }
+                });
+                
+                // Clear any existing fields first
+                document.getElementById('card-name-field-container').innerHTML = '';
+                document.getElementById('card-number-field-container').innerHTML = '';
+                document.getElementById('card-expiry-field-container').innerHTML = '';
+                document.getElementById('card-cvv-field-container').innerHTML = '';
+                
+                // Render card fields with error handling
+                const renderField = (field, container, fieldName) => {
+                    try {
+                        if (field) {
+                            field.render(container);
+                            console.log(`${fieldName} field rendered successfully`);
+                        } else {
+                            console.warn(`${fieldName} field not available`);
+                        }
+                    } catch (error) {
+                        console.error(`Error rendering ${fieldName} field:`, error);
+                    }
+                };
+                
+                renderField(cardFields.NameField(), '#card-name-field-container', 'Name');
+                renderField(cardFields.NumberField(), '#card-number-field-container', 'Number');
+                renderField(cardFields.ExpiryField(), '#card-expiry-field-container', 'Expiry');
+                renderField(cardFields.CVVField(), '#card-cvv-field-container', 'CVV');
+                
+                // Set up submit button (remove existing listeners first)
+                const submitButton = document.getElementById('card-field-submit-button');
+                const newSubmitButton = submitButton.cloneNode(true);
+                submitButton.parentNode.replaceChild(newSubmitButton, submitButton);
+                
+                newSubmitButton.addEventListener('click', function() {
+                    const amount = document.getElementById('amount').value;
                     if (!amount || amount <= 0) {
-                        showStatus('Please enter a valid amount', 'error');
+                        showStatus('Please enter a valid amount before submitting', 'error');
                         return;
                     }
                     
-                    showStatus('Creating order for card payment...', 'info');
+                    showStatus('Processing card payment...', 'info');
+                    newSubmitButton.disabled = true;
+                    newSubmitButton.textContent = 'Processing...';
                     
-                    return fetch(`${API_BASE}/create-order`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            amount: parseFloat(amount),
-                            currency: currency,
-                            description: description
-                        })
-                    })
-                    .then(function(response) {
-                        return response.json();
-                    })
-                    .then(function(orderData) {
-                        orderID = orderData.id;
-                        return orderData.id;
+                    cardFields.submit().then(function() {
+                        showStatus('Card payment submitted successfully', 'success');
+                    }).catch(function(err) {
+                        showStatus('Card payment failed: ' + err.message, 'error');
+                        console.error('Card submit error:', err);
+                    }).finally(function() {
+                        newSubmitButton.disabled = false;
+                        newSubmitButton.textContent = 'Submit Payment';
                     });
-                },
-                
-                onApprove: function(data) {
-                    showStatus('Payment approved! Capturing...', 'info');
-                    
-                    return fetch(`${API_BASE}/capture-order`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            orderID: data.orderID
-                        })
-                    })
-                    .then(function(response) {
-                        return response.json();
-                    })
-                    .then(function(orderData) {
-                        showStatus('Payment completed successfully! 🎉', 'success');
-                        
-                        // Show order details
-                        document.getElementById('order-details').style.display = 'block';
-                        document.getElementById('order-json').textContent = JSON.stringify(orderData, null, 2);
-                        
-                        console.log('Payment completed:', orderData);
-                        
-                        // Record transaction
-                        recordTransaction(orderData);
-                    });
-                },
-                
-                onError: function(err) {
-                    showStatus('Payment failed: ' + err.message, 'error');
-                    console.error('CardFields error:', err);
-                }
-            });
-            
-            // Render card fields
-            if (cardFields.NameField) {
-                cardFields.NameField().render('#card-name-field-container');
-            }
-            
-            if (cardFields.NumberField) {
-                cardFields.NumberField().render('#card-number-field-container');
-            }
-            
-            if (cardFields.ExpiryField) {
-                cardFields.ExpiryField().render('#card-expiry-field-container');
-            }
-            
-            if (cardFields.CVVField) {
-                cardFields.CVVField().render('#card-cvv-field-container');
-            }
-            
-            // Set up submit button
-            document.getElementById('card-field-submit-button').addEventListener('click', function() {
-                showStatus('Processing card payment...', 'info');
-                
-                cardFields.submit().then(function() {
-                    showStatus('Card payment submitted successfully', 'success');
-                }).catch(function(err) {
-                    showStatus('Card payment failed: ' + err.message, 'error');
-                    console.error('Card submit error:', err);
                 });
-            });
+                
+                showStatus('Credit card fields initialized successfully', 'success');
+                
+            } catch (error) {
+                showStatus('Failed to initialize card fields: ' + error.message, 'error');
+                console.error('CardFields initialization error:', error);
+                document.getElementById('card-fields-container').style.display = 'none';
+            }
         }
         
         // Record transaction in our backend
@@ -820,30 +1243,31 @@
         // Update buttons when amount or currency changes
         function updatePayPalButtons() {
             updatePrice();
+            // We only need to re-render the buttons, not reload the whole SDK
             initializePayPalButtons();
         }
         
         // Update event listeners
         document.getElementById('amount').addEventListener('input', updatePayPalButtons);
-        document.getElementById('currency').addEventListener('change', updatePayPalButtons);
         document.getElementById('description').addEventListener('input', updatePayPalButtons);
+
+        // Handle currency changes by reloading the SDK
+        document.getElementById('currency').addEventListener('change', () => {
+            const currency = document.getElementById('currency').value;
+            loadPayPalSDK(currency);
+        });
+        document.getElementById('advanced-currency').addEventListener('change', () => {
+            const currency = document.getElementById('advanced-currency').value;
+            loadPayPalSDK(currency);
+        });
         
         // Initialize
         updatePrice();
         
         // Initialize PayPal components when page loads
         window.addEventListener('load', () => {
-            // Wait a bit for PayPal SDK to load
-            setTimeout(() => {
-                if (typeof paypal !== 'undefined') {
-                    initializePayPalButtons();
-                    initializeCardFields();
-                    showStatus('PayPal SDK loaded successfully', 'success');
-                } else {
-                    showStatus('PayPal SDK failed to load, showing manual buttons', 'error');
-                    document.getElementById('manual-buttons').style.display = 'block';
-                }
-            }, 1000);
+            const initialCurrency = document.getElementById('currency').value || 'USD';
+            loadPayPalSDK(initialCurrency);
         });
         
         // ======================
@@ -1153,6 +1577,298 @@
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
             }
+        }
+        
+        // ======================
+        // ADVANCED CHECKOUT FUNCTIONS
+        // ======================
+        
+        let advancedCardFields;
+        let advancedCardFieldsValid = false;
+        
+        // Initialize Advanced Checkout
+        async function initializeAdvancedCheckout() {
+            console.log('Initializing Advanced Checkout...');
+            
+            if (!paypal || !paypal.CardFields) {
+                showAdvancedStatus('PayPal CardFields component not available', 'error');
+                document.getElementById('advanced-card-not-eligible').style.display = 'block';
+                document.getElementById('advanced-card-not-eligible').textContent = 'PayPal CardFields component not loaded';
+                return;
+            }
+            
+            // Fields are eligible, proceed with setup
+            document.getElementById('advanced-card-eligibility').textContent = 'Card Fields are eligible! Setting up advanced checkout...';
+            document.getElementById('advanced-card-fields-container').style.display = 'block';
+            document.getElementById('advanced-card-eligibility').className = 'status success';
+            
+            try {
+                console.log('Setting up advanced card fields...');
+                await setupAdvancedCardFields();
+                
+                console.log('Setting up alternative payments...');
+                setupAdvancedAlternativePayments();
+                
+                console.log('Setting up event listeners...');
+                setupAdvancedEventListeners();
+                
+                // Hide eligibility message and show success
+                setTimeout(() => {
+                    document.getElementById('advanced-card-eligibility').style.display = 'none';
+                }, 2000);
+                
+                showAdvancedStatus('Advanced Checkout initialized successfully! You can now enter credit card information.', 'success');
+                
+            } catch (error) {
+                console.error('Advanced Checkout initialization error:', error);
+                showAdvancedStatus(`Failed to initialize Advanced Checkout: ${error.message}`, 'error');
+                document.getElementById('advanced-card-fields-container').style.display = 'none';
+            }
+        }
+        
+        // Setup Advanced Card Fields
+        async function setupAdvancedCardFields() {
+            const collectBilling = document.getElementById('collect-billing-address').checked;
+            const collectShipping = document.getElementById('collect-shipping-address').checked;
+            
+            // Get style configuration
+            const style = getAdvancedCardFieldStyle();
+            
+            advancedCardFields = paypal.CardFields({
+                createOrder: function() {
+                    return createAdvancedOrder();
+                },
+                
+                onApprove: function(data) {
+                    return captureAdvancedOrder(data.orderID);
+                },
+                
+                onError: function(err) {
+                    showAdvancedStatus(`Payment error: ${err.message}`, 'error');
+                    console.error('Advanced Card Fields error:', err);
+                },
+                
+                style: {
+                    'input': style
+                }
+            });
+            
+            // Clear existing fields first
+            document.getElementById('advanced-card-name-field').innerHTML = '';
+            document.getElementById('advanced-card-number-field').innerHTML = '';
+            document.getElementById('advanced-card-expiry-field').innerHTML = '';
+            document.getElementById('advanced-card-cvv-field').innerHTML = '';
+            
+            // Render card fields with proper error handling
+            try {
+                if (advancedCardFields.NameField) {
+                    advancedCardFields.NameField().render('#advanced-card-name-field');
+                    console.log('Advanced Name field rendered');
+                }
+                
+                if (advancedCardFields.NumberField) {
+                    advancedCardFields.NumberField().render('#advanced-card-number-field');
+                    console.log('Advanced Number field rendered');
+                }
+                
+                if (advancedCardFields.ExpiryField) {
+                    advancedCardFields.ExpiryField().render('#advanced-card-expiry-field');
+                    console.log('Advanced Expiry field rendered');
+                }
+                
+                if (advancedCardFields.CVVField) {
+                    advancedCardFields.CVVField().render('#advanced-card-cvv-field');
+                    console.log('Advanced CVV field rendered');
+                }
+            } catch (error) {
+                console.error('Error rendering advanced card fields:', error);
+                showAdvancedStatus('Error rendering card fields: ' + error.message, 'error');
+            }
+            
+            // Render billing address fields if enabled
+            if (collectBilling) {
+                document.getElementById('billing-address-section').style.display = 'block';
+                
+                try {
+                    // Clear billing fields first
+                    ['billing-address', 'billing-city', 'billing-state', 'billing-zip', 'billing-country'].forEach(field => {
+                        const element = document.getElementById(`advanced-card-${field}-field`);
+                        if (element) element.innerHTML = '';
+                    });
+                    
+                    // Note: Billing address fields may not be available in all PayPal accounts
+                    // They require special merchant approval
+                    console.log('Billing address collection requested but may require merchant approval');
+                    
+                } catch (error) {
+                    console.error('Error rendering billing address fields:', error);
+                }
+            } else {
+                document.getElementById('billing-address-section').style.display = 'none';
+            }
+        }
+        
+        // Get card field styling
+        function getAdvancedCardFieldStyle() {
+            return {
+                'color': document.getElementById('field-color').value,
+                'font-size': document.getElementById('field-font-size').value,
+                'border-radius': document.getElementById('field-border-radius').value,
+                'border': '1px solid #ddd',
+                'padding': '12px'
+            };
+        }
+        
+        // Create order for advanced checkout
+        async function createAdvancedOrder() {
+            const amount = document.getElementById('advanced-amount').value;
+            const currency = document.getElementById('advanced-currency').value;
+            const description = document.getElementById('advanced-description').value;
+            
+            if (!amount || amount <= 0) {
+                showAdvancedStatus('Please enter a valid amount', 'error');
+                throw new Error('Invalid amount');
+            }
+            
+            showAdvancedStatus('Creating order for advanced checkout...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/create-order`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: parseFloat(amount),
+                        currency: currency,
+                        description: description,
+                        advanced_checkout: true,
+                        three_d_secure: document.getElementById('enable-3d-secure').checked
+                    })
+                });
+                
+                const orderData = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(orderData.error || 'Failed to create order');
+                }
+                
+                return orderData.id;
+                
+            } catch (error) {
+                showAdvancedStatus(`Order creation failed: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+        
+        // Capture advanced order
+        async function captureAdvancedOrder(orderID) {
+            showAdvancedStatus('Processing advanced payment...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/capture-order`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        orderID: orderID
+                    })
+                });
+                
+                const captureData = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(captureData.error || 'Payment capture failed');
+                }
+                
+                showAdvancedStatus('Advanced payment completed successfully! 🎉', 'success');
+                
+                // Show order details
+                document.getElementById('order-details').style.display = 'block';
+                document.getElementById('order-json').textContent = JSON.stringify(captureData, null, 2);
+                
+                return captureData;
+                
+            } catch (error) {
+                showAdvancedStatus(`Payment capture failed: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+        
+        // Setup alternative payment methods
+        function setupAdvancedAlternativePayments() {
+            const container = document.getElementById('alternative-payment-container');
+            container.innerHTML = '';
+            
+            if (document.getElementById('enable-paypal-button').checked) {
+                const paypalContainer = document.createElement('div');
+                paypalContainer.id = 'advanced-paypal-buttons';
+                container.appendChild(paypalContainer);
+                
+                paypal.Buttons({
+                    createOrder: function() {
+                        return createAdvancedOrder();
+                    },
+                    onApprove: function(data, actions) {
+                        return captureAdvancedOrder(data.orderID);
+                    },
+                    onError: function(err) {
+                        showAdvancedStatus(`PayPal button error: ${err.message}`, 'error');
+                    }
+                }).render('#advanced-paypal-buttons');
+            }
+            
+            // Add Apple Pay and Google Pay buttons if enabled
+            // (These would require additional setup and merchant approval)
+        }
+        
+        // Setup advanced event listeners
+        function setupAdvancedEventListeners() {
+            // Submit button
+            document.getElementById('advanced-card-submit').addEventListener('click', function() {
+                showAdvancedStatus('Processing card payment...', 'info');
+                
+                if (advancedCardFields) {
+                    advancedCardFields.submit().then(function() {
+                        showAdvancedStatus('Card payment submitted successfully', 'success');
+                    }).catch(function(err) {
+                        showAdvancedStatus(`Card payment failed: ${err.message}`, 'error');
+                    });
+                }
+            });
+            
+            // Billing address checkbox
+            document.getElementById('collect-billing-address').addEventListener('change', function() {
+                if (advancedCardFields) {
+                    setupAdvancedCardFields(); // Re-initialize with new settings
+                }
+            });
+            
+            // Style changes
+            ['field-color', 'field-font-size', 'field-border-radius'].forEach(id => {
+                document.getElementById(id).addEventListener('change', function() {
+                    if (advancedCardFields) {
+                        setupAdvancedCardFields(); // Re-initialize with new styles
+                    }
+                });
+            });
+            
+            // Alternative payment methods
+            ['enable-paypal-button', 'enable-apple-pay', 'enable-google-pay'].forEach(id => {
+                document.getElementById(id).addEventListener('change', function() {
+                    setupAdvancedAlternativePayments();
+                });
+            });
+        }
+        
+        // Show status for advanced checkout
+        function showAdvancedStatus(message, type = 'info') {
+            // Use the existing showStatus function
+            showStatus(message, type);
+            
+            // Also log to console for debugging
+            console.log(`Advanced Checkout: ${message}`);
         }
         
         // Initialize first nav button as active

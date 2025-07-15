@@ -146,7 +146,8 @@ async function createOrder(request, env, corsHeaders) {
     soft_descriptor,
     items = [],
     shipping = {},
-    application_context = {}
+    application_context = {},
+    three_d_secure = false
   } = await request.json();
   
   if (!amount) {
@@ -187,6 +188,18 @@ async function createOrder(request, env, corsHeaders) {
       cancel_url: application_context.cancel_url
     }
   };
+
+  if (three_d_secure) {
+    orderData.payment_source = {
+      card: {
+        attributes: {
+          verification: {
+            method: "SCA_ALWAYS"
+          }
+        }
+      }
+    }
+  }
 
   const apiBase = getPayPalApiBase(env);
   const response = await fetch(`${apiBase}/v2/checkout/orders`, {
@@ -274,20 +287,57 @@ async function getOrderTracking(orderId, env, corsHeaders) {
   const accessToken = await getAccessToken(env);
   const apiBase = getPayPalApiBase(env);
   
-  const response = await fetch(`${apiBase}/v1/shipping/trackers-batch/${orderId}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  try {
+    // First get order details to extract capture ID
+    const orderResponse = await fetch(`${apiBase}/v2/checkout/orders/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    const orderData = await orderResponse.json();
+    
+    if (!orderResponse.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to get order details', details: orderData }),
+        { status: orderResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Extract capture ID from order
+    const captureId = orderData.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+    
+    if (!captureId) {
+      return new Response(
+        JSON.stringify({ error: 'No capture found for this order. Order must be completed before tracking can be retrieved.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Get tracking information using capture ID
+    const trackingResponse = await fetch(`${apiBase}/v1/shipping/trackers-batch/${captureId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-  const tracking = await response.json();
-  
-  return new Response(
-    JSON.stringify(tracking),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
+    const tracking = await trackingResponse.json();
+    
+    return new Response(
+      JSON.stringify(tracking),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+    
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: 'Failed to get tracking information', details: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
 }
 
 async function addOrderTracking(orderId, request, env, corsHeaders) {
@@ -309,33 +359,77 @@ async function addOrderTracking(orderId, request, env, corsHeaders) {
   const accessToken = await getAccessToken(env);
   const apiBase = getPayPalApiBase(env);
   
-  const trackingData = {
-    trackers: [{
-      transaction_id: orderId,
-      tracking_number: tracking_number,
-      status: 'SHIPPED',
-      carrier: carrier.toUpperCase(),
-      tracking_url: tracking_url,
-      notify_buyer: notify_buyer,
-      items: items
-    }]
-  };
+  try {
+    // First get order details to extract capture ID
+    const orderResponse = await fetch(`${apiBase}/v2/checkout/orders/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    const orderData = await orderResponse.json();
+    
+    if (!orderResponse.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to get order details', details: orderData }),
+        { status: orderResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Extract capture ID from order
+    const captureId = orderData.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+    
+    if (!captureId) {
+      return new Response(
+        JSON.stringify({ error: 'No capture found for this order. Order must be completed before tracking can be added.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Add tracking information using capture ID
+    const trackingData = {
+      trackers: [{
+        transaction_id: captureId,  // Use capture ID instead of order ID
+        tracking_number: tracking_number,
+        status: 'SHIPPED',
+        carrier: carrier.toUpperCase(),
+        tracking_url: tracking_url,
+        notify_buyer: notify_buyer,
+        items: items
+      }]
+    };
 
-  const response = await fetch(`${apiBase}/v1/shipping/trackers-batch`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(trackingData),
-  });
+    const response = await fetch(`${apiBase}/v1/shipping/trackers-batch`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(trackingData),
+    });
 
-  const result = await response.json();
-  
-  return new Response(
-    JSON.stringify(result),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
+    const result = await response.json();
+    
+    if (!response.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to add tracking information', details: result }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    return new Response(
+      JSON.stringify(result),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+    
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: 'Failed to add tracking information', details: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
 }
 
 async function updateOrderTracking(orderId, request, env, corsHeaders) {
@@ -357,30 +451,74 @@ async function updateOrderTracking(orderId, request, env, corsHeaders) {
   const accessToken = await getAccessToken(env);
   const apiBase = getPayPalApiBase(env);
   
-  const trackingData = {
-    transaction_id: orderId,
-    tracking_number: tracking_number,
-    status: status,
-    carrier: carrier.toUpperCase(),
-    tracking_url: tracking_url,
-    notify_buyer: notify_buyer
-  };
+  try {
+    // First get order details to extract capture ID
+    const orderResponse = await fetch(`${apiBase}/v2/checkout/orders/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    const orderData = await orderResponse.json();
+    
+    if (!orderResponse.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to get order details', details: orderData }),
+        { status: orderResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Extract capture ID from order
+    const captureId = orderData.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+    
+    if (!captureId) {
+      return new Response(
+        JSON.stringify({ error: 'No capture found for this order. Order must be completed before tracking can be updated.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Update tracking information using capture ID
+    const trackingData = {
+      transaction_id: captureId,  // Use capture ID instead of order ID
+      tracking_number: tracking_number,
+      status: status,
+      carrier: carrier.toUpperCase(),
+      tracking_url: tracking_url,
+      notify_buyer: notify_buyer
+    };
 
-  const response = await fetch(`${apiBase}/v1/shipping/trackers/${orderId}-${tracking_number}`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(trackingData),
-  });
+    const response = await fetch(`${apiBase}/v1/shipping/trackers/${captureId}-${tracking_number}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(trackingData),
+    });
 
-  const result = await response.json();
-  
-  return new Response(
-    JSON.stringify(result),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
+    const result = await response.json();
+    
+    if (!response.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to update tracking information', details: result }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    return new Response(
+      JSON.stringify(result),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+    
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: 'Failed to update tracking information', details: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
 }
 
 async function getPaymentDetails(paymentId, env, corsHeaders) {
