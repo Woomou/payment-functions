@@ -1,0 +1,18 @@
+{
+    "errors": [
+      {
+        "name": "INVALID_TRANSACTION_ID",
+        "message": "Invalid data provided",
+        "debug_id": "3122072851d46",
+        "details": [
+          {
+            "field": "#/transaction_id",
+            "value": "2L4598547X0938028",
+            "location": "body",
+            "issue": "INVALID_TRANSACTION_ID",
+            "links": []
+          }
+        ]
+      }
+    ]
+  }

@@ -1,0 +1,28 @@
+{
+    "tracker_identifiers": [],
+    "errors": [
+      {
+        "name": "RESOURCE_NOT_FOUND",
+        "message": "The specified resource does not exist",
+        "details": [
+          {
+            "field": "/trackers/1/transaction_id",
+            "value": "2L4598547X0938028",
+            "location": "body",
+            "issue": "INVALID_TRANSACTION_ID",
+            "description": "The PayPal transaction id is invalid",
+            "links": []
+          }
+        ],
+        "links": []
+      }
+    ],
+    "links": [
+      {
+        "href": "https://api.sandbox.paypal.com/v1/shipping/trackers-batch",
+        "rel": "self",
+        "method": "POST",
+        "encType": "application/json"
+      }
+    ]
+  }

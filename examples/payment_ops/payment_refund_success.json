@@ -1,0 +1,16 @@
+{
+    "id": "87Y346036R857422W",
+    "status": "COMPLETED",
+    "links": [
+      {
+        "href": "https://api.sandbox.paypal.com/v2/payments/refunds/87Y346036R857422W",
+        "rel": "self",
+        "method": "GET"
+      },
+      {
+        "href": "https://api.sandbox.paypal.com/v2/payments/captures/27Y18705JL446623F",
+        "rel": "up",
+        "method": "GET"
+      }
+    ]
+  }

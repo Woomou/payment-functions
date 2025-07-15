@@ -1,0 +1,18 @@
+{
+    "error": "Failed to update tracking information",
+    "details": {
+      "name": "INVALID_TRACKING_NUMBER",
+      "message": "The requested resource ID was not found",
+      "debug_id": "d2dc81a743219",
+      "details": [
+        {
+          "field": "tracker_id",
+          "value": "27Y18705JL446623F-1Z999AA1234567808",
+          "location": "path",
+          "issue": "INVALID_TRACKING_INFO",
+          "links": []
+        }
+      ],
+      "links": []
+    }
+  }
