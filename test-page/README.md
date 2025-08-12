@@ -1,128 +1,152 @@
-# PayPal Payment Test Page
+# Payment Test Platform
 
-这是一个最小化的测试网页，用于测试PayPal支付功能是否正常工作。
+统一支付测试平台 - 支持 PayPal 和 Stripe 的前后端分离架构
 
-## 文件结构
+## 📁 项目结构
 
 ```
 test-page/
-├── index.html              # 基础测试页面 (仅Sandbox)
-├── index-switcher.html     # 环境切换测试页面 (Sandbox + Live)
-├── server.py               # 简单的HTTP服务器
-└── README.md               # 说明文档
+├── backend/                 # Python 后端服务
+│   └── server.py           # Flask-like HTTP 服务器
+├── frontend/               # React Next.js 前端
+│   ├── src/app/page.tsx   # 主支付页面
+│   ├── package.json       # 前端依赖配置
+│   └── ...                # Next.js 标准结构
+├── start-platform.sh      # 一键启动脚本
+├── unified-payment.html   # 旧版统一页面 (已废弃)
+├── index.html             # PayPal 单独测试页
+├── stripe.html            # Stripe 单独测试页
+└── README.md              # 项目文档
 ```
 
-## 使用方法
+## 🚀 快速启动
 
-### 1. 启动测试服务器
-
+### 方式一：一键启动（推荐）
 ```bash
-# 进入test-page目录
-cd test-page
-
-# 启动基础测试服务器 (仅Sandbox)
-python3 server.py
-
-# 启动环境切换版本服务器 (Sandbox + Live)
-python3 server.py --switcher
+cd /Users/harryneo/re8ch/payment-functions/test-page
+./start-platform.sh
 ```
 
-服务器会自动在 `http://localhost:8000` 启动并打开浏览器。
+### 方式二：手动启动
 
-### 页面选择：
+1. **启动后端服务**
+```bash
+cd backend
+python3 server.py
+# 后端运行在 http://localhost:3001
+```
 
-1. **基础测试页面** (`index.html`): 仅支持Sandbox环境
-2. **环境切换页面** (`index-switcher.html`): 支持Sandbox和Live环境切换
+2. **启动前端服务**
+```bash
+cd frontend
+npm install lucide-react
+npm run dev
+# 前端运行在 http://localhost:3000
+```
 
-### 2. 配置PayPal环境变量
+## 🎯 功能特点
 
-在使用前，请确保已在Cloudflare Dashboard中配置以下环境变量：
+### 用户体验优化
+- **先选择支付方式，再选择环境** - 符合用户决策流程
+- **使用 Lucide React 图标** - 专业、现代的图标库
+- **响应式设计** - 支持桌面和移动设备
+- **清晰的视觉层次** - 渐变色彩和卡片式布局
 
-**开发环境变量：**
-- `PAYPAL_CLIENT_ID` - 你的PayPal沙盒客户端ID
-- `PAYPAL_CLIENT_SECRET` - 你的PayPal沙盒客户端密钥
-- `PAYPAL_ENVIRONMENT` - "development"
+### 技术架构
+- **前端**: React 19 + Next.js 15 + TypeScript + Tailwind CSS
+- **后端**: Python 3 原生 HTTP 服务器
+- **图标**: Lucide React (替代 emoji)
+- **通信**: RESTful API
 
-### 3. 测试流程
+### 支付功能
+- **PayPal 集成** - 支持订单创建和捕获
+- **Stripe 集成** - 支持支付意图创建和确认
+- **环境切换** - Sandbox/Live 环境一键切换
+- **多货币支持** - USD, EUR, GBP, CNY
 
-现在支持两种支付方式：
+## 🛠️ API 端点
 
-#### 方式1：PayPal JavaScript SDK (推荐)
-1. **PayPal账户支付**：
-   - 输入金额、币种和描述
-   - 点击PayPal按钮
-   - 使用PayPal账户登录支付
-   - 支付完成后自动显示结果
+### 后端服务 (http://localhost:3001)
 
-2. **信用卡直接支付**：
-   - 输入金额、币种和描述
-   - 使用下方的信用卡输入表单
-   - 输入测试信用卡信息：
-     - 卡号：`4111111111111111` (Visa)
-     - 有效期：任何未来日期 (如 `12/25`)
-     - CVV：`123`
-     - 姓名：任何名字
-   - 点击"Submit Payment"按钮
-   - 支付完成后自动显示结果
+#### 健康检查
+```
+GET /health
+```
 
-#### 方式2：手动API调用 (备用)
-1. **创建订单**：
-   - 输入金额、币种和描述
-   - 点击"Create PayPal Order"按钮
-   - 系统会调用你的Cloudflare Worker创建PayPal订单
+#### PayPal API
+```
+POST /api/paypal/create-order
+POST /api/paypal/capture-order
+```
 
-2. **PayPal批准**：
-   - 会自动打开PayPal沙盒登录页面
-   - 使用PayPal沙盒测试账户登录并批准支付
+#### Stripe API
+```
+POST /api/stripe/create-payment-intent
+POST /api/stripe/confirm-payment
+```
 
-3. **捕获支付**：
-   - 回到测试页面，点击"Capture Payment"按钮
-   - 系统会调用你的Worker捕获支付
+## 🎨 UI 设计改进
 
-## 测试账户
+### 原有问题
+- UI 布局混乱
+- 环境选择和支付方式选择顺序不合理
+- 使用 emoji 图标不够专业
 
-你可以使用PayPal沙盒测试账户：
-- 买家账户：在PayPal开发者控制台创建
-- 卖家账户：你的沙盒商户账户
+### 改进方案
+1. **重新设计用户流程**
+   - 首页显示支付方式选择
+   - 选择后进入配置页面，再选择环境
+   
+2. **专业图标系统**
+   - 使用 Lucide React 图标库
+   - 统一的图标风格和大小
 
-## 功能特点
+3. **现代化界面**
+   - 渐变背景和阴影效果
+   - 清晰的卡片式布局
+   - 响应式网格系统
 
-- ✅ 简单直观的界面
-- ✅ 实时状态显示
-- ✅ **完整的PayPal支付流程** (包括信用卡支付)
-- ✅ **PayPal JavaScript SDK集成** - 支持信用卡直接支付
-- ✅ 详细的订单信息显示
-- ✅ 错误处理和用户反馈
-- ✅ 支持多种货币
-- ✅ 自动开启浏览器
-- ✅ 动态更新支付按钮
-- ✅ 后端交易记录
+## 📋 使用说明
 
-## 故障排除
+1. **访问前端界面**: http://localhost:3000
+2. **选择支付方式**: 点击 PayPal 或 Stripe 卡片
+3. **配置支付参数**:
+   - 环境: Sandbox (测试) / Live (生产)
+   - 金额: 自定义支付金额
+   - 货币: 支持多种货币
+4. **执行测试**: 点击支付按钮
+5. **查看结果**: 右侧面板显示测试结果
 
-1. **订单创建失败**：
-   - 检查Cloudflare Worker的环境变量是否正确设置
-   - 确认PayPal客户端ID和密钥是否有效
+## 🔧 开发说明
 
-2. **CardFields不可用**：
-   - 确保你的PayPal商户账户支持"Advanced Credit and Debit Card Payments"
-   - 检查是否在沙盒环境中正确设置了账户
+### 前端开发
+- 基于 Next.js 15 App Router
+- TypeScript 严格模式
+- Tailwind CSS 样式系统
+- 客户端状态管理
 
-3. **支付失败**：
-   - 使用正确的测试信用卡号码
-   - 确保有效期是未来日期
-   - 检查CVV格式是否正确
+### 后端开发
+- Python 3 原生 HTTP 服务器
+- CORS 跨域支持
+- JSON API 接口
+- 错误处理和日志
 
-4. **网络错误**：
-   - 检查Cloudflare Worker是否正常运行
-   - 确认API端点URL是否正确
+## 📊 测试环境
 
-5. **AXO SDK错误**：
-   - 这是PayPal已废弃的功能，现在使用CardFields代替
-   - 确保使用最新的PayPal SDK配置
+- **开发环境**: Sandbox 模式，用于测试
+- **生产环境**: Live 模式，真实支付
+- **本地开发**: 使用 mock 数据进行测试
 
-## 注意事项
+## 🛡️ 注意事项
 
-- 这是开发环境测试，使用PayPal沙盒API
-- 不会产生真实的资金交易
-- 测试完成后记得关闭服务器(Ctrl+C)
+- 确保 Python 3 和 Node.js 已安装
+- 生产环境需要配置真实的 PayPal 和 Stripe API 密钥
+- 注意 API 密钥的安全管理
+- 建议在生产环境使用 HTTPS
+
+## 🤝 支持
+
+如需帮助，请查看：
+- 后端健康检查: http://localhost:3001/health
+- 浏览器开发者工具网络面板
+- 服务器终端日志输出

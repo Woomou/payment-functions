@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统一支付测试页面 - PayPal & Stripe</title>
+    <!-- PayPal SDK will be loaded dynamically -->
+    <!-- Stripe SDK -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .config-section {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ffeaa7;
+            margin-bottom: 25px;
+        }
+        .config-section h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .environment-switch {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .env-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .payment-provider-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 15px 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .tab-button.paypal {
+            color: #0070ba;
+        }
+        .tab-button.stripe {
+            color: #635bff;
+        }
+        .tab-button.active.paypal {
+            border-bottom-color: #0070ba;
+            background: rgba(0, 112, 186, 0.1);
+        }
+        .tab-button.active.stripe {
+            border-bottom-color: #635bff;
+            background: rgba(99, 91, 255, 0.1);
+        }
+        .payment-section {
+            display: none;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .payment-section.active {
+            display: block;
+        }
+        .payment-section.paypal {
+            border-color: #0070ba;
+            background: linear-gradient(135deg, #f8fbff 0%, #e7f3ff 100%);
+        }
+        .payment-section.stripe {
+            border-color: #635bff;
+            background: linear-gradient(135deg, #f6f9ff 0%, #e6f2ff 100%);
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+        .price-display {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin: 15px 0;
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .payment-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .payment-method {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .payment-method:hover {
+            border-color: #007bff;
+            transform: translateY(-2px);
+        }
+        .payment-method h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        .button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .button.paypal {
+            background: #0070ba;
+            color: white;
+        }
+        .button.paypal:hover:not(:disabled) {
+            background: #005ea6;
+        }
+        .button.stripe {
+            background: #635bff;
+            color: white;
+        }
+        .button.stripe:hover:not(:disabled) {
+            background: #5a52e5;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+            display: none;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .payment-result {
+            display: none;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .payment-result h3 {
+            margin-top: 0;
+            color: #28a745;
+        }
+        .payment-result pre {
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .card-element {
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 10px 0;
+            background: white;
+            transition: border-color 0.3s ease;
+        }
+        .card-element:hover {
+            border-color: #635bff;
+        }
+        .card-element.focus {
+            border-color: #635bff;
+            box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.1);
+        }
+        .card-element.invalid {
+            border-color: #dc3545;
+        }
+        @media (max-width: 768px) {
+            .payment-methods {
+                grid-template-columns: 1fr;
+            }
+            .environment-switch {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 统一支付测试平台</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            支持 PayPal 和 Stripe 的完整支付解决方案测试页面
+        </p>
+        
+        <!-- 环境配置 -->
+        <div class="config-section">
+            <h3>⚙️ 环境配置</h3>
+            <div class="environment-switch">
+                <div class="env-option">
+                    <input type="radio" id="env-dev" name="environment" value="development" checked>
+                    <label for="env-dev">🧪 开发环境 (Sandbox)</label>
+                </div>
+                <div class="env-option">
+                    <input type="radio" id="env-prod" name="environment" value="production">
+                    <label for="env-prod">🔴 生产环境 (Live)</label>
+                </div>
+            </div>
+            <div id="current-config">
+                <p><strong>PayPal API:</strong> <code id="paypal-endpoint">development</code></p>
+                <p><strong>Stripe API:</strong> <code id="stripe-endpoint">development</code></p>
+            </div>
+        </div>
+
+        <!-- 支付信息 -->
+        <div class="config-section">
+            <h3>💰 支付信息</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div class="input-group">
+                    <label for="amount">金额</label>
+                    <input type="number" id="amount" value="10.00" min="0.01" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label for="currency">货币</label>
+                    <select id="currency">
+                        <option value="USD">USD - 美元</option>
+                        <option value="EUR">EUR - 欧元</option>
+                        <option value="GBP">GBP - 英镑</option>
+                        <option value="CNY">CNY - 人民币</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="description">描述</label>
+                    <input type="text" id="description" value="测试支付订单" placeholder="订单描述">
+                </div>
+            </div>
+            <div class="price-display">
+                💰 支付金额: <span id="price-display">$10.00</span>
+            </div>
+        </div>
+
+        <!-- 支付方式选择 -->
+        <div class="payment-provider-tabs">
+            <button class="tab-button paypal active" onclick="switchPaymentProvider('paypal')">
+                💙 PayPal 支付
+            </button>
+            <button class="tab-button stripe" onclick="switchPaymentProvider('stripe')">
+                💜 Stripe 支付
+            </button>
+        </div>
+
+        <!-- PayPal 支付区域 -->
+        <div id="paypal-section" class="payment-section paypal active">
+            <h3 style="color: #0070ba;">💙 PayPal 支付选项</h3>
+            
+            <div class="payment-methods">
+                <!-- PayPal Button -->
+                <div class="payment-method">
+                    <h4>🔵 PayPal 钱包</h4>
+                    <p>使用 PayPal 账户或银行卡支付</p>
+                    <div id="paypal-button-container"></div>
+                </div>
+
+                <!-- PayPal Card Fields -->
+                <div class="payment-method">
+                    <h4>💳 信用卡直付</h4>
+                    <p>直接使用信用卡，无需注册 PayPal</p>
+                    <div id="paypal-card-container" style="display: none;">
+                        <div class="input-group">
+                            <label>持卡人姓名</label>
+                            <div id="paypal-name-field" class="card-element"></div>
+                        </div>
+                        <div class="input-group">
+                            <label>卡号</label>
+                            <div id="paypal-number-field" class="card-element"></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-group">
+                                <label>有效期</label>
+                                <div id="paypal-expiry-field" class="card-element"></div>
+                            </div>
+                            <div class="input-group">
+                                <label>CVV</label>
+                                <div id="paypal-cvv-field" class="card-element"></div>
+                            </div>
+                        </div>
+                        <button id="paypal-card-submit" class="button paypal">
+                            🔒 确认支付
+                        </button>
+                    </div>
+                    <div id="paypal-card-not-available" style="display: none; color: #666; font-style: italic;">
+                        信用卡直付功能在当前商户账号中不可用
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="button paypal" onclick="testPayPalAPI()" style="background: #17a2b8;">
+                    🧪 测试 PayPal API 连接
+                </button>
+            </div>
+        </div>
+
+        <!-- Stripe 支付区域 -->
+        <div id="stripe-section" class="payment-section stripe">
+            <h3 style="color: #635bff;">💜 Stripe 支付选项</h3>
+            
+            <div class="payment-methods">
+                <!-- Stripe Card Payment -->
+                <div class="payment-method">
+                    <h4>💳 信用卡支付</h4>
+                    <p>支持 Visa、MasterCard、American Express 等</p>
+                    <div class="input-group">
+                        <label>信用卡信息</label>
+                        <div id="stripe-card-element" class="card-element"></div>
+                    </div>
+                    <button id="stripe-pay-button" class="button stripe">
+                        🔒 立即支付
+                    </button>
+                </div>
+
+                <!-- Stripe Payment Methods -->
+                <div class="payment-method">
+                    <h4>🌟 其他支付方式</h4>
+                    <p>即将支持更多支付方式</p>
+                    <div style="padding: 20px; text-align: center; color: #666; border: 2px dashed #ddd; border-radius: 8px;">
+                        <p>🚀 更多支付方式开发中...</p>
+                        <p style="font-size: 14px;">Apple Pay, Google Pay, 银联等</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="button stripe" onclick="testStripeAPI()" style="background: #17a2b8;">
+                    🧪 测试 Stripe API 连接
+                </button>
+            </div>
+        </div>
+
+        <!-- 状态显示 -->
+        <div id="status" class="status"></div>
+
+        <!-- 支付结果 -->
+        <div id="payment-result" class="payment-result">
+            <h3>✅ 支付成功</h3>
+            <pre id="result-json"></pre>
+        </div>
+    </div>
+
+    <script>
+        // API 配置
+        const API_ENDPOINTS = {
+            development: {
+                paypal: 'https://paypal-payments-development.realharryscissors.workers.dev',
+                stripe: 'https://stripe-payments-development.realharryscissors.workers.dev'
+            },
+            production: {
+                paypal: 'https://paypal-payments-production.realharryscissors.workers.dev',
+                stripe: 'https://stripe-payments-production.realharryscissors.workers.dev'
+            }
+        };
+
+        // PayPal 配置
+        const PAYPAL_CONFIG = {
+            development: {
+                clientId: 'AcbqkofakNw-zIq4Jql1WkcU0qSi6qfRA3GayhHQ7Ugrz7Bw7fZdyQL_877QUy_gS4LBolWe-HtKbKRl'
+            },
+            production: {
+                clientId: 'YOUR_PRODUCTION_PAYPAL_CLIENT_ID'
+            }
+        };
+
+        // Stripe 配置
+        const STRIPE_CONFIG = {
+            development: {
+                publishableKey: 'pk_test_YOUR_TEST_STRIPE_PUBLISHABLE_KEY'
+            },
+            production: {
+                publishableKey: 'pk_live_YOUR_LIVE_STRIPE_PUBLISHABLE_KEY'
+            }
+        };
+
+        // 全局变量
+        let currentEnvironment = 'development';
+        let currentProvider = 'paypal';
+        let paypalLoaded = false;
+        let stripeLoaded = false;
+        let stripe = null;
+        let stripeElements = null;
+        let cardElement = null;
+        let paypalCardFields = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEnvironment();
+            updatePriceDisplay();
+            setupEventListeners();
+            loadCurrentProvider();
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 环境切换
+            document.querySelectorAll('input[name="environment"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked) {
+                        switchEnvironment(this.value);
+                    }
+                });
+            });
+
+            // 金额变化
+            document.getElementById('amount').addEventListener('input', updatePriceDisplay);
+            document.getElementById('currency').addEventListener('change', updatePriceDisplay);
+        }
+
+        // 切换支付提供商
+        function switchPaymentProvider(provider) {
+            currentProvider = provider;
+            
+            // 更新标签样式
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.tab-button.${provider}`).classList.add('active');
+            
+            // 显示对应的支付区域
+            document.querySelectorAll('.payment-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(`${provider}-section`).classList.add('active');
+            
+            // 加载对应的SDK
+            loadCurrentProvider();
+        }
+
+        // 切换环境
+        function switchEnvironment(env) {
+            currentEnvironment = env;
+            updateEnvironmentDisplay();
+            loadCurrentProvider();
+            showStatus(`已切换到${env === 'development' ? '开发' : '生产'}环境`, 'info');
+        }
+
+        // 初始化环境
+        function initializeEnvironment() {
+            updateEnvironmentDisplay();
+        }
+
+        // 更新环境显示
+        function updateEnvironmentDisplay() {
+            document.getElementById('paypal-endpoint').textContent = 
+                API_ENDPOINTS[currentEnvironment].paypal;
+            document.getElementById('stripe-endpoint').textContent = 
+                API_ENDPOINTS[currentEnvironment].stripe;
+        }
+
+        // 更新价格显示
+        function updatePriceDisplay() {
+            const amount = document.getElementById('amount').value;
+            const currency = document.getElementById('currency').value;
+            const symbols = { USD: '$', EUR: '€', GBP: '£', CNY: '¥' };
+            document.getElementById('price-display').textContent = 
+                `${symbols[currency] || currency} ${parseFloat(amount || 0).toFixed(2)}`;
+        }
+
+        // 加载当前提供商
+        function loadCurrentProvider() {
+            if (currentProvider === 'paypal') {
+                loadPayPalSDK();
+            } else if (currentProvider === 'stripe') {
+                loadStripeSDK();
+            }
+        }
+
+        // 加载 PayPal SDK
+        function loadPayPalSDK() {
+            if (paypalLoaded) {
+                initializePayPal();
+                return;
+            }
+
+            showStatus('正在加载 PayPal SDK...', 'info');
+
+            // 移除现有脚本
+            const existingScript = document.querySelector('script[src*="paypal.com/sdk/js"]');
+            if (existingScript) {
+                document.head.removeChild(existingScript);
+            }
+
+            const script = document.createElement('script');
+            const clientId = PAYPAL_CONFIG[currentEnvironment].clientId;
+            const currency = document.getElementById('currency').value;
+            
+            script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=buttons,card-fields&currency=${currency}&intent=capture&debug=true`;
+            
+            script.onload = () => {
+                paypalLoaded = true;
+                initializePayPal();
+                showStatus('PayPal SDK 加载完成', 'success');
+            };
+            
+            script.onerror = () => {
+                showStatus('PayPal SDK 加载失败', 'error');
+            };
+
+            document.head.appendChild(script);
+        }
+
+        // 加载 Stripe SDK
+        function loadStripeSDK() {
+            if (stripeLoaded) {
+                initializeStripe();
+                return;
+            }
+
+            showStatus('正在初始化 Stripe...', 'info');
+            
+            try {
+                const publishableKey = STRIPE_CONFIG[currentEnvironment].publishableKey;
+                stripe = Stripe(publishableKey);
+                stripeElements = stripe.elements();
+                
+                stripeLoaded = true;
+                initializeStripe();
+                showStatus('Stripe SDK 初始化完成', 'success');
+            } catch (error) {
+                showStatus('Stripe SDK 初始化失败: ' + error.message, 'error');
+            }
+        }
+
+        // 初始化 PayPal
+        function initializePayPal() {
+            if (!window.paypal) {
+                showStatus('PayPal SDK 未加载', 'error');
+                return;
+            }
+
+            // 初始化 PayPal 按钮
+            initializePayPalButtons();
+            
+            // 初始化 PayPal 卡片字段
+            initializePayPalCardFields();
+        }
+
+        // 初始化 PayPal 按钮
+        function initializePayPalButtons() {
+            const container = document.getElementById('paypal-button-container');
+            container.innerHTML = '';
+
+            paypal.Buttons({
+                createOrder: function(data, actions) {
+                    return createPayPalOrder();
+                },
+                onApprove: function(data, actions) {
+                    return capturePayPalOrder(data.orderID);
+                },
+                onError: function(err) {
+                    showStatus('PayPal 支付错误: ' + err.message, 'error');
+                },
+                onCancel: function(data) {
+                    showStatus('支付已取消', 'info');
+                },
+                style: {
+                    color: 'blue',
+                    shape: 'rect',
+                    label: 'paypal',
+                    layout: 'vertical'
+                }
+            }).render('#paypal-button-container');
+        }
+
+        // 初始化 PayPal 卡片字段
+        function initializePayPalCardFields() {
+            if (!paypal.CardFields || !paypal.CardFields.isEligible()) {
+                document.getElementById('paypal-card-container').style.display = 'none';
+                document.getElementById('paypal-card-not-available').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('paypal-card-container').style.display = 'block';
+            document.getElementById('paypal-card-not-available').style.display = 'none';
+
+            paypalCardFields = paypal.CardFields({
+                createOrder: function() {
+                    return createPayPalOrder();
+                },
+                onApprove: function(data) {
+                    return capturePayPalOrder(data.orderID);
+                },
+                onError: function(err) {
+                    showStatus('PayPal 卡片支付错误: ' + err.message, 'error');
+                }
+            });
+
+            // 渲染卡片字段
+            if (paypalCardFields.NameField) {
+                paypalCardFields.NameField().render('#paypal-name-field');
+            }
+            if (paypalCardFields.NumberField) {
+                paypalCardFields.NumberField().render('#paypal-number-field');
+            }
+            if (paypalCardFields.ExpiryField) {
+                paypalCardFields.ExpiryField().render('#paypal-expiry-field');
+            }
+            if (paypalCardFields.CVVField) {
+                paypalCardFields.CVVField().render('#paypal-cvv-field');
+            }
+
+            // 设置提交按钮
+            document.getElementById('paypal-card-submit').addEventListener('click', function() {
+                if (paypalCardFields) {
+                    showStatus('正在处理支付...', 'info');
+                    paypalCardFields.submit().catch(function(err) {
+                        showStatus('支付失败: ' + err.message, 'error');
+                    });
+                }
+            });
+        }
+
+        // 初始化 Stripe
+        function initializeStripe() {
+            if (!stripe || !stripeElements) {
+                showStatus('Stripe 未初始化', 'error');
+                return;
+            }
+
+            // 创建卡片元素
+            cardElement = stripeElements.create('card', {
+                style: {
+                    base: {
+                        fontSize: '16px',
+                        color: '#424770',
+                        '::placeholder': {
+                            color: '#aab7c4',
+                        },
+                    },
+                    invalid: {
+                        color: '#9e2146',
+                    },
+                },
+            });
+
+            cardElement.mount('#stripe-card-element');
+
+            // 监听变化
+            cardElement.on('change', function(event) {
+                const cardContainer = document.getElementById('stripe-card-element');
+                if (event.error) {
+                    cardContainer.classList.add('invalid');
+                    showStatus(event.error.message, 'error');
+                } else {
+                    cardContainer.classList.remove('invalid');
+                    hideStatus();
+                }
+            });
+
+            // 设置支付按钮
+            document.getElementById('stripe-pay-button').addEventListener('click', handleStripePayment);
+        }
+
+        // 创建 PayPal 订单
+        async function createPayPalOrder() {
+            const amount = document.getElementById('amount').value;
+            const currency = document.getElementById('currency').value;
+            const description = document.getElementById('description').value;
+
+            try {
+                const response = await fetch(`${API_ENDPOINTS[currentEnvironment].paypal}/create-order`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: parseFloat(amount),
+                        currency: currency,
+                        description: description
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || '创建订单失败');
+                }
+
+                return data.id;
+            } catch (error) {
+                showStatus('创建 PayPal 订单失败: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // 捕获 PayPal 订单
+        async function capturePayPalOrder(orderID) {
+            showStatus('正在处理 PayPal 支付...', 'info');
+
+            try {
+                const response = await fetch(`${API_ENDPOINTS[currentEnvironment].paypal}/capture-order`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        orderID: orderID
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || '支付捕获失败');
+                }
+
+                showPaymentSuccess(data, 'PayPal');
+                return data;
+            } catch (error) {
+                showStatus('PayPal 支付失败: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // 处理 Stripe 支付
+        async function handleStripePayment() {
+            const payButton = document.getElementById('stripe-pay-button');
+            const amount = document.getElementById('amount').value;
+            const currency = document.getElementById('currency').value;
+            const description = document.getElementById('description').value;
+
+            payButton.disabled = true;
+            payButton.innerHTML = '<div class="loading"></div> 处理中...';
+            showStatus('正在创建 Stripe 支付...', 'info');
+
+            try {
+                // 创建 Payment Intent
+                const response = await fetch(`${API_ENDPOINTS[currentEnvironment].stripe}/create-payment-intent`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: Math.round(parseFloat(amount) * 100), // 转换为分
+                        currency: currency.toLowerCase(),
+                        description: description
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || '创建支付意图失败');
+                }
+
+                // 确认支付
+                const result = await stripe.confirmCardPayment(data.clientSecret, {
+                    payment_method: {
+                        card: cardElement,
+                    }
+                });
+
+                if (result.error) {
+                    throw new Error(result.error.message);
+                } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+                    showPaymentSuccess(result.paymentIntent, 'Stripe');
+                }
+            } catch (error) {
+                showStatus('Stripe 支付失败: ' + error.message, 'error');
+            } finally {
+                payButton.disabled = false;
+                payButton.innerHTML = '🔒 立即支付';
+            }
+        }
+
+        // 显示支付成功
+        function showPaymentSuccess(data, provider) {
+            showStatus(`🎉 ${provider} 支付成功！`, 'success');
+            
+            document.getElementById('result-json').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('payment-result').style.display = 'block';
+            
+            // 滚动到结果区域
+            document.getElementById('payment-result').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+
+        // 测试 PayPal API
+        async function testPayPalAPI() {
+            showStatus('正在测试 PayPal API 连接...', 'info');
+            try {
+                const response = await fetch(API_ENDPOINTS[currentEnvironment].paypal);
+                const data = await response.json();
+                if (response.ok) {
+                    showStatus(`✅ PayPal API 连接成功 - 环境: ${data.environment}`, 'success');
+                } else {
+                    throw new Error('API 响应错误');
+                }
+            } catch (error) {
+                showStatus('❌ PayPal API 连接失败: ' + error.message, 'error');
+            }
+        }
+
+        // 测试 Stripe API
+        async function testStripeAPI() {
+            showStatus('正在测试 Stripe API 连接...', 'info');
+            try {
+                const response = await fetch(API_ENDPOINTS[currentEnvironment].stripe);
+                const data = await response.json();
+                if (response.ok) {
+                    showStatus(`✅ Stripe API 连接成功 - 环境: ${data.environment}`, 'success');
+                } else {
+                    throw new Error('API 响应错误');
+                }
+            } catch (error) {
+                showStatus('❌ Stripe API 连接失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示状态
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+            
+            // 自动隐藏成功消息
+            if (type === 'success') {
+                setTimeout(hideStatus, 5000);
+            }
+        }
+
+        // 隐藏状态
+        function hideStatus() {
+            document.getElementById('status').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
